@@ -46,7 +46,6 @@ class Base3DProp(object):
         self.base = np.array([0,0,0])
         self.info = dict()
         self._time = 0
-        self._legend = None
         self.renderedAt = set()
         self.transform = None
         self._set2actcam = False
@@ -287,6 +286,19 @@ class Base3DProp(object):
 
         :param rotation: If != 0 rotate object around newaxis.
         :param rad: set to True if angle is in radians.
+
+        :Example:
+
+            .. code-block:: python
+
+                from vedo import *
+                objs = []
+                for i in range(-5, 5):
+                    p = [i/3, i/2, i]
+                    v = vector(i/10, i/20, 1)
+                    c = Circle(r=i/5+1.2).pos(p).orientation(v).lw(3)
+                    objs += [c, Arrow(p,p+v)]
+                show(objs, axes=1)
 
         |gyroscope2| |gyroscope2.py|_
         """
