@@ -4,7 +4,6 @@ import time
 import sys
 import vtk
 import os.path
-from vtk.util.numpy_support import vtk_to_numpy
 import numpy as np
 
 import vedo
@@ -23,9 +22,11 @@ Defines main class ``Plotter`` to manage actors and 3D rendering.
 
 __all__ = ["show",
            "clear",
-           "ion", "ioff",
+           "ion",
+           "ioff",
            "Plotter",
-           "closeWindow", "closePlotter",
+           "closeWindow",
+           "closePlotter",
            "interactive",
            ]
 
@@ -161,7 +162,7 @@ def show(*actors, **options):
     pos = options.pop("pos", (0, 0))
     size = options.pop("size", "auto")
     screensize = options.pop("screensize", "auto")
-    title = options.pop("title", "")
+    title = options.pop("title", "vedo")
     bg = options.pop("bg", "white")
     bg2 = options.pop("bg2", None)
     axes = options.pop("axes", settings.defaultAxesType)
@@ -233,8 +234,7 @@ def show(*actors, **options):
 
     if utils.isSequence(at):
         for i, a in enumerate(actors):
-            _plt_to_return = plt.show(
-                                        a,
+            _plt_to_return = plt.show(  a,
                                         at=i,
                                         zoom=zoom,
                                         resetcam=resetcam,
@@ -392,7 +392,7 @@ class Plotter:
         pos=(0, 0),
         size="auto",
         screensize="auto",
-        title="",
+        title="vedo",
         bg="white",
         bg2=None,
         axes=settings.defaultAxesType,
@@ -497,9 +497,9 @@ class Plotter:
                 ############################
 
         # more settings
-        if settings.useDepthPeeling:
-            self.window.SetAlphaBitPlanes(settings.alphaBitPlanes)
-            self.window.SetMultiSamples(settings.multiSamples)
+        self.window.SetAlphaBitPlanes(settings.alphaBitPlanes)
+        self.window.SetMultiSamples(settings.multiSamples)
+
         self.window.SetPolygonSmoothing(settings.polygonSmoothing)
         self.window.SetLineSmoothing(settings.lineSmoothing)
         self.window.SetPointSmoothing(settings.pointSmoothing)
@@ -585,14 +585,22 @@ class Plotter:
             for r in self.renderers:
                 r.SetUseHiddenLineRemoval(settings.hiddenLineRemoval)
                 r.SetLightFollowCamera(settings.lightFollowsCamera)
-                if settings.useFXAA is not None:
-                    r.SetUseFXAA(settings.useFXAA)
-                    self.window.SetMultiSamples(settings.multiSamples)
-                if settings.useDepthPeeling:
-                    r.SetUseDepthPeeling(True)
-                    r.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
-                    r.SetOcclusionRatio(settings.occlusionRatio)
+
+                r.SetUseDepthPeeling(settings.useDepthPeeling)
+                r.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                r.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
+                r.SetOcclusionRatio(settings.occlusionRatio)
+                r.SetUseFXAA(settings.useFXAA)
+                r.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
+                if hasattr(r, "SetUseSSAO"):
+                    r.SetUseSSAO(settings.useSSAO)
+                    r.SetSSAORadius(settings.SSAORadius)
+                    r.SetSSAOBias(settings.SSAOBias)
+                    r.SetSSAOKernelSize(settings.SSAOKernelSize)
+                    r.SetSSAOBlur(settings.SSAOBlur)
+
                 r.SetBackground(getColor(self.backgrcol))
+
                 self.axes_instances.append(None)
 
             self.shape = (n+m,)
@@ -612,10 +620,20 @@ class Plotter:
                 arenderer = vtk.vtkRenderer()
                 arenderer.SetUseHiddenLineRemoval(settings.hiddenLineRemoval)
                 arenderer.SetLightFollowCamera(settings.lightFollowsCamera)
-                arenderer.SetUseFXAA(settings.useFXAA)
-                if settings.useFXAA:
-                    self.window.SetMultiSamples(settings.multiSamples)
+
                 arenderer.SetUseDepthPeeling(settings.useDepthPeeling)
+                arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
+                arenderer.SetOcclusionRatio(settings.occlusionRatio)
+                arenderer.SetUseFXAA(settings.useFXAA)
+                arenderer.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
+                if hasattr(arenderer, "SetUseSSAO"):
+                    arenderer.SetUseSSAO(settings.useSSAO)
+                    arenderer.SetSSAORadius(settings.SSAORadius)
+                    arenderer.SetSSAOBias(settings.SSAOBias)
+                    arenderer.SetSSAOKernelSize(settings.SSAOKernelSize)
+                    arenderer.SetSSAOBlur(settings.SSAOBlur)
+
                 arenderer.SetViewport(x0, y0, x1, y1)
                 arenderer.SetBackground(getColor(bg_))
                 if bg2_:
@@ -668,10 +686,19 @@ class Plotter:
                         arenderer.SetUseHiddenLineRemoval(settings.hiddenLineRemoval)
                         arenderer.SetLightFollowCamera(settings.lightFollowsCamera)
                         arenderer.SetTwoSidedLighting(settings.twoSidedLighting)
-                        arenderer.SetUseFXAA(settings.useFXAA)
-                        if settings.useFXAA:
-                            self.window.SetMultiSamples(settings.multiSamples)
+
                         arenderer.SetUseDepthPeeling(settings.useDepthPeeling)
+                        arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                        arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
+                        arenderer.SetOcclusionRatio(settings.occlusionRatio)
+                        arenderer.SetUseFXAA(settings.useFXAA)
+                        arenderer.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
+                        if hasattr(arenderer, "SetUseSSAO"):
+                            arenderer.SetUseSSAO(settings.useSSAO)
+                            arenderer.SetSSAORadius(settings.SSAORadius)
+                            arenderer.SetSSAOBias(settings.SSAOBias)
+                            arenderer.SetSSAOKernelSize(settings.SSAOKernelSize)
+                            arenderer.SetSSAOBlur(settings.SSAOBlur)
 
                     if image_actor:
                         arenderer.SetLayer(1)
@@ -712,8 +739,6 @@ class Plotter:
             ########################
             return #################
             ########################
-
-        self.window.SetWindowName(title)
 
         for r in self.renderers:
             self.window.AddRenderer(r)
@@ -790,9 +815,7 @@ class Plotter:
         if not self.interactor:
             return self
         if at is not None:
-            ren = self.renderers[at]
-        else:
-            ren = self.renderer
+            self.renderer = self.renderers[at]
 
         actors = self._scan_input(actors)
 
@@ -800,14 +823,14 @@ class Plotter:
             for a in actors:
                 if a not in self.actors:
                     self.actors.append(a)
-                    if ren:
-                        ren.AddActor(a)
+                if self.renderer:
+                    self.renderer.AddActor(a)
         else:
             self.actors.append(actors)
-            ren.AddActor(actors)
+            self.renderer.AddActor(actors)
         if render:
             if resetcam:
-                ren.ResetCamera()
+                self.renderer.ResetCamera()
             self.interactor.Render()
         return self
 
@@ -1153,6 +1176,36 @@ class Plotter:
         """
         return addons.addButton(fnc, states, c, bc, pos, size, font,
                                 bold, italic, alpha, angle)
+
+    def addSplineTool(self, points, pc='k', ps=8, lc='r4', ac='g5', lw=2, closed=False, interactive=True):
+        """
+        Add a spline tool to the current plotter. Nodes of the spline can be dragged in space
+        with the mouse.
+        Clicking on the line itself adds an extra point.
+        Selecting a point and pressing ``del`` removes it.
+
+        Parameters
+        ----------
+        points : Mesh, Points, array
+            the set of vertices forming the spline nodes.
+        pc : str, optional
+            point color. The default is 'k'.
+        ps : str, optional
+            point size. The default is 8.
+        lc : str, optional
+            line color. The default is 'r4'.
+        ac : str, optional
+            active point marker color. The default is 'g5'.
+        lw : int, optional
+            line width. The default is 2.
+        closed : bool, optional
+            spline is meant to be closed. The default is False.
+
+        Returns
+        -------
+        SplineTool object.
+        """
+        return addons.addSplineTool(self, points, pc, ps, lc, ac, lw, closed, interactive)
 
     def addCutterTool(self, obj=None, mode='box', invert=False):
         """Create an interactive tool to cut away parts of a mesh or volume.
@@ -1568,6 +1621,60 @@ class Plotter:
             printc("                          allowed actions: [create, destroy]", action, c='r')
         return self
 
+
+    def computeWorldPosition(self, pos2d, at=0, objs=(), bounds=(),
+                             offset=None, pixeltol=None, worldtol=None):
+        """
+        Transform a 2D point on the screen into a 3D point inside the rendering scene.
+
+        Parameters
+        ----------
+        pos2d : list
+            2D screen coordinates point.
+        at : int, optional
+            renderer number. The default is 0.
+        objs : list, optional
+            list of Mesh objects to project the point onto. The default is ().
+        bounds : list, optional
+            specify a bounding box as [xmin,xmax, ymin,ymax, zmin,zmax]. The default is ().
+        offset : float, optional
+            specify an offset value. The default is None (will use system defaults).
+        pixeltol : int, optional
+            screen tolerance in pixels. The default is None (will use system defaults).
+        worldtol : float, optional
+            world coordinates tolerance. The default is None (will use system defaults).
+
+        Returns
+        -------
+        numpy array
+            the point in 3D world coordinates.
+        """
+        renderer = self.renderers[at]
+        if not objs:
+            pp = vtk.vtkFocalPlanePointPlacer()
+        else:
+            pp = vtk.vtkPolygonalSurfacePointPlacer()
+            for ob in objs:
+                pp.AddProp(ob)
+
+        if len(bounds)==6:
+            pp.SetPointBounds(bounds)
+        if pixeltol:
+            pp.SetPixelTolerance(pixeltol)
+        if worldtol:
+            pp.SetWorldTolerance(worldtol)
+        if offset:
+            pp.SetOffset(offset)
+
+        worldPos = [0,0,0]
+        worldOrient = [0,0,0, 0,0,0, 0,0,0]
+        pp.ComputeWorldPosition(renderer, pos2d, worldPos, worldOrient)
+        # validw = pp.ValidateWorldPosition(worldPos, worldOrient)
+        # validd = pp.ValidateDisplayPosition(renderer, pos2d)
+        # print(validd, validw, worldOrient)
+        return np.array(worldPos)
+
+
     def _scan_input(self, wannabeacts):
 
         if not utils.isSequence(wannabeacts):
@@ -1590,15 +1697,10 @@ class Plotter:
                         scannedacts.append(a._caption)
 
             elif isinstance(a, vtk.vtkActor2D):
-                # print([a])
                 scannedacts.append(a)
 
             elif isinstance(a, vtk.vtkAssembly):
                 scannedacts.append(a)
-                # from vedo.pyplot import Plot
-                # if isinstance(a, Plot):
-                #     a.modified = False
-                #     self.sharecam = False
                 if a.trail and a.trail not in self.actors:
                     scannedacts.append(a.trail)
 
@@ -1612,7 +1714,7 @@ class Plotter:
                 # check ugrid is all made of tets
                 ugrid = a.inputdata()
                 uarr = ugrid.GetCellTypesArray()
-                celltypes = np.unique(vtk_to_numpy(uarr))
+                celltypes = np.unique(utils.vtk2numpy(uarr))
                 ncelltypes = len(celltypes)
                 if ncelltypes > 1 or (ncelltypes==1 and celltypes[0]!=10):
                     scannedacts.append(a.tomesh())
@@ -1633,6 +1735,35 @@ class Plotter:
                 vvol.SetProperty(vprop)
                 scannedacts.append(vvol)
 
+            elif isinstance(a, str):
+                if a.startswith('https'):        # assume a url/filepath was given
+                    a = vedo.io.download(a)
+                # make a few obvious checks before accessing os.path.isfile
+                if ("." in a
+                    and ". " not in a
+                    and not a.endswith(".")
+                    and not a.endswith(" ")
+                    and not a.endswith("\n")
+                    and os.path.isfile(a)
+                   ):
+                    out = vedo.io.load(a)
+                    scannedacts.append(out)
+                else:                            # assume a 2D comment was given
+                    changed = False  # check if one already exists so to just update text
+                    acs = self.renderer.GetActors2D()
+                    acs.InitTraversal()
+                    for i in range(acs.GetNumberOfItems()):
+                        act = acs.GetNextItem()
+                        if isinstance(act, vedo.shapes.Text2D):
+                            aposx, aposy = act.GetPosition()
+                            if aposx<0.01 and aposy>0.99: # "top-left"
+                                act.text(a)  # update content! no appending nada
+                                changed = True
+                                break
+                    if not changed:
+                        out = vedo.shapes.Text2D(a) # append a new one
+                        scannedacts.append(out)
+
             elif isinstance(a, vtk.vtkImageActor):
                 scannedacts.append(a)
 
@@ -1641,16 +1772,6 @@ class Plotter:
 
             elif isinstance(a, vtk.vtkLight):
                 self.renderer.AddLight(a)
-
-            elif isinstance(a, str):  # assume a filepath or 2D comment was given
-                if a.startswith('https'):
-                    a = vedo.io.download(a)
-                if "." in a and ". " not in a and not a.endswith(".")\
-                    and os.path.isfile(a):
-                    out = vedo.io.load(a)
-                else:
-                    out = vedo.shapes.Text2D(a)
-                scannedacts.append(out)
 
             elif isinstance(a, vtk.vtkMultiBlockDataSet):
                 for i in range(a.GetNumberOfBlocks()):
@@ -1817,10 +1938,11 @@ class Plotter:
             interactive = False
             self.interactive = False
 
-        if resetcam is not None:
-            self.resetcam = resetcam
         if camera is not None:
             self.resetcam = False
+
+        if resetcam is not None:
+            self.resetcam = resetcam
 
         if len(actors) == 0:
             actors = None
@@ -1847,6 +1969,8 @@ class Plotter:
             if settings.notebookBackend not in ['panel', '2d', 'ipyvtk']:
                 return backends.getNotebookBackend(actors2show, zoom, viewup)
         #########################################################################
+
+        self.window.SetWindowName(self.title)
 
         if interactive is not None:
             self.interactive = interactive
@@ -1976,7 +2100,7 @@ class Plotter:
             return backends.getNotebookBackend(0, 0, 0)
         #########################################################################
 
-        if self.resetcam: #or self.initializedIren == False:
+        if self.resetcam:
             self.renderer.ResetCamera()
 
         if settings.showRendererFrame and len(self.renderers) > 1:

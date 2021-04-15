@@ -90,7 +90,17 @@ General settings.
     occlusionRatio  = 0.0   # occlusion ratio, 0 = exact image.
 
     # Turn on/off nvidia FXAA anti-aliasing, if supported.
-    useFXAA = None          # either True or False. None sets the system default
+    useFXAA = False         # either True or False. None sets the system default
+
+    # By default, the depth buffer is reset for each renderer. If True, use the existing depth buffer
+    preserveDepthBuffer = False
+
+    # Turn on/off Screen Space Ambient Occlusion (SSAO), darken some pixels to improve depth perception
+    useSSAO         = False
+    SSAORadius      = 0.5   # the SSAO hemisphere radius
+    SSAOBias        = 0.01  # the bias when comparing samples
+    SSAOKernelSize  = 32    # the number of samples
+    SSAOBlur        = False # blurring of the ambient occlusion (helps for low samples nr)
 
     # Use a polygon/edges offset to possibly resolve conflicts in rendering
     usePolygonOffset    = False
@@ -196,16 +206,29 @@ twoSidedLighting = True
 
 # Turn on/off rendering of translucent material with depth peeling technique.
 #https://lorensen.github.io/VTKExamples/site/Cxx/Visualization/CorrectlyRenderTranslucentGeometry
+
 useDepthPeeling = False
-if '9' in vtk.vtkVersion().GetVTKVersion():
+multiSamples = 8
+if vtk.vtkVersion().GetVTKMajorVersion() >= 9:
     useDepthPeeling = True
-alphaBitPlanes  = True  # only relevant if useDepthPeeling
-multiSamples    = 0
-maxNumberOfPeels= 8
+    multiSamples    = 0
+occlusionRatio  = 0.1
+maxNumberOfPeels= 16
 occlusionRatio  = 0.0
+alphaBitPlanes  = True
+
+# By default, the depth buffer is reset for each renderer. If true, use the existing depth buffer
+preserveDepthBuffer = False
+
+#Enable or disable Screen Space Ambient Occlusion: SSAO darkens some pixels to improve depth perception.
+useSSAO        = False
+SSAORadius     = 0.5     # define the SSAO hemisphere radius
+SSAOBias       = 0.01    # define the bias when comparing samples
+SSAOKernelSize = 32      # define the number of samples
+SSAOBlur       = False   # define blurring of the ambient occlusion (helps for low samples)
 
 # Turn on/off nvidia FXAA anti-aliasing, if supported.
-useFXAA = None           # either True or False. None sets the system default
+useFXAA = False          # either True or False. None sets the system default
 
 # Use a polygon/edges offset to possibly resolve conflicts in rendering
 usePolygonOffset = False
@@ -444,14 +467,6 @@ font_parameters = dict(
                         lspacing = 0.11,
                         dotsep = "·",
                         islocal = False,
-                        ),
-        VTK = dict(
-                        mono = False,
-                        fscale = 0.8,
-                        hspacing = 0.6,
-                        lspacing = 0.4,
-                        dotsep = "~^.~ ",
-                        islocal = True,
                         ),
         Meson= dict(
                         mono = False,

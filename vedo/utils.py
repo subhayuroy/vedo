@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import vtk, sys
-from vtk.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray
+from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy, numpy_to_vtkIdTypeArray
 import numpy as np
 import vedo
 from vedo.colors import printc
@@ -24,6 +24,7 @@ __all__ = [
     "mag2",
     "versor",
     "precision",
+    "roundToDigit",
     "pointIsInTriangle",
     "pointToLineDistance",
     "grep",
@@ -43,6 +44,8 @@ __all__ = [
     "vedo2trimesh",
     "trimesh2vedo",
     "resampleArrays",
+    "vtk2numpy",
+    "numpy2vtk",
 ]
 
 ###########################################################################
@@ -248,6 +251,33 @@ class dotdict(dict):
 
 
 ###########################################################
+def numpy2vtk(arr, dtype=None, deep=True, name=""):
+    """Convert a numpy array into a vtkDataArray"""
+    if arr is None:
+        return None
+    arr = np.ascontiguousarray(arr)
+    if dtype is not None and dtype!='id':
+        arr = arr.astype(dtype)
+
+    if dtype and dtype=='id':
+        varr = numpy_to_vtkIdTypeArray(arr.astype(np.int64), deep=deep)
+    else:
+        varr = numpy_to_vtk(arr, deep=deep)
+    if name:
+        varr.SetName(name)
+    return varr
+
+def vtk2numpy(varr):
+    """Convert a vtkDataArray or vtkIdList into a numpy array"""
+    if isinstance(varr, vtk.vtkIdList):
+        return np.array([varr.GetId(i) for i in range(varr.GetNumberOfIds())])
+    elif isinstance(varr, vtk.vtkBitArray):
+        carr = vtk.vtkCharArray()
+        carr.DeepCopy(varr)
+        varr = carr
+    return vtk_to_numpy(varr)
+
+
 def geometry(obj, extent=None):
     """
     Apply the ``vtkGeometryFilter``.
@@ -303,7 +333,8 @@ def buildPolyData(vertices, faces=None, lines=None, indexOffset=0, fast=True, te
             vertices = np.c_[vertices, np.zeros(len(vertices))]
 
     sourcePoints = vtk.vtkPoints()
-    sourcePoints.SetData(numpy_to_vtk(np.ascontiguousarray(vertices), deep=True))
+    # sourcePoints.SetData(numpy_to_vtk(np.ascontiguousarray(vertices), deep=True))
+    sourcePoints.SetData(numpy2vtk(vertices, dtype=np.float))
     poly.SetPoints(sourcePoints)
 
     if lines is not None:
@@ -576,18 +607,29 @@ def versor(x, y=None, z=0.0, dtype=np.float64):
         return v / mag(v)
 
 
-def mag(z):
+def mag(v):
     """Get the magnitude of a vector."""
-    if isinstance(z[0], np.ndarray):
-        return np.array(list(map(np.linalg.norm, z)))
+    if isinstance(v[0], np.ndarray):
+        return np.array(list(map(np.linalg.norm, v)))
     else:
-        return np.linalg.norm(z)
+        return np.linalg.norm(v)
 
 
-def mag2(z):
+def mag2(v):
     """Get the squared magnitude of a vector."""
-    return np.dot(z, z)
+    return np.dot(v, v)
 
+
+def roundToDigit(x, p):
+    """Round a real number to the specified number of significant digits"""
+    if not x:
+        return x
+    k = np.int(np.floor(np.log10(np.abs(x)))) + (p-1)
+    r = np.around(x, -k)
+    if int(r) == r:
+        return int(r)
+    else:
+        return r
 
 def precision(x, p, vrange=None, delimiter='e'):
     """
@@ -595,15 +637,10 @@ def precision(x, p, vrange=None, delimiter='e'):
 
     :param float vrange: range in which x exists (to snap it to '0' if below precision).
 
-    Based on the webkit javascript implementation taken
+    Based on the webkit javascript implementation
     `from here <https://code.google.com/p/webkit-mirror/source/browse/JavaScriptCore/kjs/number_object.cpp>`_,
     and implemented by `randlet <https://github.com/randlet/to-precision>`_.
     """
-    #round_to_n = lambda x, n: np.around(x, -np.int(np.floor(np.log10(np.abs(x)))) + (n - 1))
-    #x= 13556.783434
-    #print(round_to_n(x, 3))
-    #print(precision(x, 3))
-
     if isinstance(x, str): #do nothing
         return x
 
@@ -612,8 +649,12 @@ def precision(x, p, vrange=None, delimiter='e'):
         nn=len(x)-1
         for i, ix in enumerate(x):
 
-            if np.isnan(ix):
-                return "NaN"
+            try:
+                if np.isnan(ix):
+                    return "NaN"
+            except:
+                # cannot handle list of list
+                continue
 
             out += precision(ix, p)
             if i<nn: out += ', '
@@ -1126,8 +1167,7 @@ def printHistogram(data, bins=10, height=10, logscale=False, minbin=0,
             if not arr:
                 return
 
-        from vtk.util.numpy_support import vtk_to_numpy
-        data = vtk_to_numpy(arr)
+        data = vtk2numpy(arr)
 
     h = np.histogram(data, bins=bins)
 
@@ -1365,6 +1405,8 @@ def makeTicks(x0, x1, N, labels=None, digits=None):
             if upBound<0:
                 negaxis = np.arange(lowBound, int(upBound/s)*s)
             else:
+                if -lowBound/s > 1.0e+06:
+                    return np.array([0.0,1.0]), ["",""]
                 negaxis = np.arange(lowBound, 0, s)
         else:
             negaxis = np.array([])
@@ -1373,6 +1415,8 @@ def makeTicks(x0, x1, N, labels=None, digits=None):
             if lowBound>0:
                 posaxis = np.arange(int(lowBound/s)*s, upBound, s)
             else:
+                if upBound/s > 1.0e+06:
+                    return np.array([0.0,1.0]), ["",""]
                 posaxis = np.arange(0, upBound, s)
         else:
             posaxis = np.array([])
@@ -1451,6 +1495,8 @@ def vedo2trimesh(mesh):
 
     points = mesh.points()
     varr = mesh.getPointArray('VertexColors')
+    # print(varr, mesh.getArrayNames())
+    # exit()
     vcols = None
     if varr is not None and len(varr)==len(points):
         vcols = []
@@ -1556,9 +1602,9 @@ def meshlab2vedo(mmesh):
     else:
         polydata = buildPolyData(mpoints, None)
     if len(pnorms):
-        polydata.GetPointData().SetNormals(numpy_to_vtk(pnorms, deep=True))
+        polydata.GetPointData().SetNormals(numpy2vtk(pnorms))
     if len(cnorms):
-        polydata.GetCellData().SetNormals(numpy_to_vtk(cnorms, deep=True))
+        polydata.GetCellData().SetNormals(numpy2vtk(cnorms))
     return polydata
 
 
@@ -1584,30 +1630,6 @@ def vtkVersionIsAtLeast(major, minor=0, build=0):
         return True
     else:
         return False
-
-# def systemReport():
-#     try:
-#         import scooby
-#         r = scooby.Report(additional=['vtk',
-#                                       'vedo',
-#                                       'meshio',
-#                                       'matplotlib',
-#                                       'k3d',
-#                                       'itkwidgets',
-#                                       'panel',
-#                                       'dolfin',
-#                                       'trimesh',
-#                                       'pymeshfix',
-#                                       'pygmsh',
-#                                       'nevergrad',
-#                                       'pyshtools',
-#                                       'cv2',
-#                                       ])
-#         printc(r)
-#     except:
-#         print('Install scooby with command: pip install scooby')
-#         r = ''
-#     return r
 
 
 def ctf2lut(tvobj):
