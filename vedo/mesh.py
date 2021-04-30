@@ -345,6 +345,7 @@ class Mesh(Points):
         If tname is set to ``None`` texture is disabled.
         If tname is set to '' then a png or jpg file is looked for with same name and path.
         Input tname can also be an array of shape (n,m,3).
+
         :param bool interpolate: turn on/off linear interpolation of the texture map when rendering.
         :param bool repeat: repeat of the texture when tcoords extend beyond the [0,1] range.
         :param bool edgeClamp: turn on/off the clamping of the texture map when
@@ -574,6 +575,21 @@ class Mesh(Points):
         self.GetProperty().SetFrontfaceCulling(value)
         return self
 
+    # def depthSort(self, camera=None):
+    #     """Depth Sort"""
+    #     https://gitlab.kitware.com/vtk/vtk/-/issues/18173
+    #     depth_sort = vtk.vtkDepthSortPolyData()
+    #     depth_sort.SetInputData(self.polydata(False))
+    #     depth_sort.SetDirectionToBackToFront()
+    #     if camera is None:
+    #         if vedo.settings.plotter_instance and vedo.settings.plotter_instance.renderer:
+    #             cam = vedo.settings.plotter_instance.renderer.GetActiveCamera()
+    #             if cam:
+    #                 depth_sort.SetCamera(cam)
+    #     depth_sort.SortScalarsOff()
+    #     depth_sort.Update()
+    #     return self._update(depth_sort.GetOuput())
+
     def backColor(self, bc=None):
         """
         Set/get mesh's backface color.
@@ -758,7 +774,7 @@ class Mesh(Points):
     def crop(self,
              top=None, bottom=None, right=None, left=None, front=None, back=None,
              bounds=None,
-             ):
+        ):
         """Crop an ``Mesh`` object.
 
         :param float top:    fraction to crop from the top plane (positive z)

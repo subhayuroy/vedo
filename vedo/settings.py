@@ -38,8 +38,12 @@ General settings.
         -10 = Terrain
         -11 = Unicam
 
-    # Allow to interact with scene during interactor.Start() execution
+    # Allow to continously interact with scene during interactive() execution
     allowInteraction = True
+
+    # Set up default mouse and keyboard functionalities
+    enableDefaultMouseCallbacks = True
+    enableDefaultKeyboardCallbacks = True
 
     # If False, when multiple renderers are present do not render each one for separate
     #  but do it just once at the end (when interactive() is called)
@@ -54,17 +58,11 @@ General settings.
     # In multirendering mode set the position of the horizontal of vertical splitting [0,1]
     windowSplittingPosition = None
 
-    # Use tex, matplotlib latex compiler
-    usetex = False
-
     # Enable / disable color printing by printc()
     enablePrintColor = True
 
     # Qt embedding
     usingQt = False
-
-    # OpenVR rendering (untested)
-    useOpenVR = False
 
     # Wrap lines in tubes
     renderLinesAsTubes = False
@@ -91,8 +89,8 @@ General settings.
     maxNumberOfPeels= 8     # maximum number of rendering passes
     occlusionRatio  = 0.0   # occlusion ratio, 0 = exact image.
 
-    # Turn on/off nvidia FXAA anti-aliasing, if supported.
-    useFXAA = False         # either True or False. None sets the system default
+    # Turn on/off nvidia FXAA post-process anti-aliasing, if supported.
+    useFXAA = False         # either True or False
 
     # By default, the depth buffer is reset for each renderer. If True, use the existing depth buffer
     preserveDepthBuffer = False
@@ -115,16 +113,18 @@ General settings.
     # Set parallel projection On or Off (place camera to infinity, no perspective effects)
     useParallelProjection = False
 
+    # Set orientation type when reading TIFF files (volumes):
+    # TOPLEFT  1 (row 0 top, col 0 lhs)    TOPRIGHT 2 (row 0 top, col 0 rhs)
+    # BOTRIGHT 3 (row 0 bottom, col 0 rhs) BOTLEFT  4 (row 0 bottom, col 0 lhs)
+    # LEFTTOP  5 (row 0 lhs, col 0 top)    RIGHTTOP 6 (row 0 rhs, col 0 top)
+    # RIGHTBOT 7 (row 0 rhs, col 0 bottom) LEFTBOT  8 (row 0 lhs, col 0 bottom)
+    tiffOrientationType = 4
+
     # AnnotatedCube axis type nr. 5 options:
     annotatedCubeColor      = (0.75, 0.75, 0.75)
     annotatedCubeTextColor  = None # use default, otherwise specify a single color
     annotatedCubeTextScale  = 0.2
-    annotatedCubeXPlusText  = "right"
-    annotatedCubeXMinusText = "left "
-    annotatedCubeYPlusText  = "front"
-    annotatedCubeYMinusText = "back "
-    annotatedCubeZPlusText  = " top "
-    annotatedCubeZMinusText = "bttom"
+    annotatedCubeTexts      = ["right","left ", "front","back ", " top ", "bttom"]
 
 Usage example:
 
@@ -135,11 +135,21 @@ Usage example:
     settings.useParallelProjection = True
 
     Cube().color('green').show()
-
 """
 import os, vtk
 
 __all__ = ['datadir', 'dataurl', 'embedWindow']
+
+
+vtk_version = [ int(vtk.vtkVersion().GetVTKMajorVersion()),
+                int(vtk.vtkVersion().GetVTKMinorVersion()),
+                int(vtk.vtkVersion().GetVTKBuildVersion()) ]
+
+try:
+    import platform
+    sys_platform = platform.system()
+except:
+    sys_platform = ""
 
 
 ####################################################################################
@@ -166,8 +176,12 @@ autoResetScalarRange = True
 # Default style is TrackBallCamera
 interactorStyle = None
 
-# Allow to interact with scene during interactor.Start() execution
+# Allow to continously interact with scene during interactor.Start() execution
 allowInteraction = True
+
+# Set up default mouse and keyboard functionalities
+enableDefaultMouseCallbacks = True
+enableDefaultKeyboardCallbacks = True
 
 # When multiple renderers are present do not render each one for separate.
 # but do it just once at the end (when interactive() is called)
@@ -178,9 +192,6 @@ rendererFrameColor = None
 rendererFrameAlpha = 0.5
 rendererFrameWidth = 0.5
 rendererFramePadding = 0.0001
-
-# Use tex, matplotlib latex compiler
-usetex = False
 
 # Qt embedding
 usingQt = False
@@ -208,18 +219,21 @@ twoSidedLighting = True
 
 # Turn on/off rendering of translucent material with depth peeling technique.
 #https://lorensen.github.io/VTKExamples/site/Cxx/Visualization/CorrectlyRenderTranslucentGeometry
-
 useDepthPeeling = False
 multiSamples = 8
-if vtk.vtkVersion().GetVTKMajorVersion() >= 9:
+#print(vtk_version, sys_platform)
+if vtk_version[0] >= 9:
     useDepthPeeling = True
+if "Darwin" in sys_platform:
+    useDepthPeeling = False
+    multiSamples = 0
+    
+maxNumberOfPeels= 8
 occlusionRatio  = 0.1
-maxNumberOfPeels= 16
-occlusionRatio  = 0.0
 alphaBitPlanes  = True
 
 # Turn on/off nvidia FXAA anti-aliasing, if supported.
-useFXAA         = False  # either True or False. None sets the system default
+useFXAA         = False  # either True or False
 
 # By default, the depth buffer is reset for each renderer. If true, use the existing depth buffer
 preserveDepthBuffer = False
@@ -245,16 +259,18 @@ useParallelProjection = False
 # In multirendering mode set the position of the horizontal of vertical splitting [0,1]
 windowSplittingPosition = None
 
+# Set orientation type when reading TIFF files (volumes):
+# TOPLEFT  1 (row 0 top, col 0 lhs)    TOPRIGHT 2 (row 0 top, col 0 rhs)
+# BOTRIGHT 3 (row 0 bottom, col 0 rhs) BOTLEFT  4 (row 0 bottom, col 0 lhs)
+# LEFTTOP  5 (row 0 lhs, col 0 top)    RIGHTTOP 6 (row 0 rhs, col 0 top)
+# RIGHTBOT 7 (row 0 rhs, col 0 bottom) LEFTBOT  8 (row 0 lhs, col 0 bottom)
+tiffOrientationType = 1
+
 # AnnotatedCube axis (type 5) customization:
 annotatedCubeColor      = (0.75, 0.75, 0.75)
 annotatedCubeTextColor  = None # use default, otherwise specify a single color
 annotatedCubeTextScale  = 0.2
-annotatedCubeXPlusText  = "right"
-annotatedCubeXMinusText = "left "
-annotatedCubeYPlusText  = "front"
-annotatedCubeYMinusText = "back "
-annotatedCubeZPlusText  = " top "
-annotatedCubeZMinusText = "bttom"
+annotatedCubeTexts      = ["right","left ", "front","back ", " top ", "bttom"]
 
 # enable / disable color printing
 enablePrintColor = True
@@ -277,7 +293,8 @@ flagColor = 'k'
 flagBackgroundColor = 'w'
 
 
-#############################
+#######################################################################################
+#######################################################################################
 installdir = os.path.dirname(__file__)
 
 textures_path = os.path.join(installdir, "textures/")
@@ -288,11 +305,12 @@ fonts = []
 
 #dataurl = "/home/musy/Dropbox/Public/vktwork/vedo_data/"; print('\ndataurl=',dataurl)
 dataurl = "https://vedo.embl.es/examples/data/"
-datadir = dataurl
+datadir = dataurl # will disappear
 
 plotter_instances = []
 plotter_instance = None
 
+####################################################################################
 ####################################################################################
 # mono       # means that all letters occupy the same space slot horizontally
 # hspacing   # an horizontal stretching factor (affects both letters and words)
@@ -473,6 +491,14 @@ font_parameters = dict(
                         mono = False,
                         fscale = 0.8,
                         hspacing = 0.9,
+                        lspacing = 0.225,
+                        dotsep = "~^.~ ",
+                        islocal = False,
+                        ),
+        Komika= dict(
+                        mono = False,
+                        fscale = 0.7,
+                        hspacing = 0.75,
                         lspacing = 0.225,
                         dotsep = "~^.~ ",
                         islocal = False,

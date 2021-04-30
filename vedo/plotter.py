@@ -467,13 +467,9 @@ class Plotter:
         self.ztitle = settings.ztitle  # z axis label and units
 
         # build the rendering window:
-        if settings.useOpenVR:
-            self.camera = vtk.vtkOpenVRCamera()
-            self.window = vtk.vtkOpenVRRenderWindow()
-        else:
-            self.camera = vtk.vtkCamera()
-            self.window = vtk.vtkRenderWindow()
-            self.window.GlobalWarningDisplayOff()
+        self.camera = vtk.vtkCamera()
+        self.window = vtk.vtkRenderWindow()
+        self.window.GlobalWarningDisplayOff()
 
 
         ############################################################
@@ -495,8 +491,11 @@ class Plotter:
                 return #####################
                 ############################
 
+        self.window.SetWindowName(self.title)
+
         # more settings
-        self.window.SetAlphaBitPlanes(settings.alphaBitPlanes)
+        if settings.useDepthPeeling:
+            self.window.SetAlphaBitPlanes(settings.alphaBitPlanes)
         self.window.SetMultiSamples(settings.multiSamples)
 
         self.window.SetPolygonSmoothing(settings.polygonSmoothing)
@@ -506,7 +505,7 @@ class Plotter:
         # sort out screen size
         if screensize == "auto":
             screensize = (2160, 1440) # might go wrong, use a default 1.5 ratio
-            if not offscreen:
+            if not self.offscreen:
                 aus = self.window.GetScreenSize()
                 if aus and len(aus) == 2 and aus[0] > 100 and aus[1] > 100:  # seems ok
                     if aus[0] / aus[1] > 2:  # looks like there are 2 or more screens
@@ -586,7 +585,7 @@ class Plotter:
                 r.SetLightFollowCamera(settings.lightFollowsCamera)
 
                 r.SetUseDepthPeeling(settings.useDepthPeeling)
-                r.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                #r.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
                 r.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
                 r.SetOcclusionRatio(settings.occlusionRatio)
                 r.SetUseFXAA(settings.useFXAA)
@@ -621,9 +620,10 @@ class Plotter:
                 arenderer.SetLightFollowCamera(settings.lightFollowsCamera)
 
                 arenderer.SetUseDepthPeeling(settings.useDepthPeeling)
-                arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
-                arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
-                arenderer.SetOcclusionRatio(settings.occlusionRatio)
+                if settings.useDepthPeeling:
+                    #arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                    arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
+                    arenderer.SetOcclusionRatio(settings.occlusionRatio)
                 arenderer.SetUseFXAA(settings.useFXAA)
                 arenderer.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
                 if hasattr(arenderer, "SetUseSSAO"):
@@ -678,26 +678,23 @@ class Plotter:
 
             for i in reversed(range(shape[0])):
                 for j in range(shape[1]):
-                    if settings.useOpenVR:
-                        arenderer = vtk.vtkOpenVRRenderer()
-                    else:
-                        arenderer = vtk.vtkRenderer()
-                        arenderer.SetUseHiddenLineRemoval(settings.hiddenLineRemoval)
-                        arenderer.SetLightFollowCamera(settings.lightFollowsCamera)
-                        arenderer.SetTwoSidedLighting(settings.twoSidedLighting)
+                    arenderer = vtk.vtkRenderer()
+                    arenderer.SetUseHiddenLineRemoval(settings.hiddenLineRemoval)
+                    arenderer.SetLightFollowCamera(settings.lightFollowsCamera)
+                    arenderer.SetTwoSidedLighting(settings.twoSidedLighting)
 
-                        arenderer.SetUseDepthPeeling(settings.useDepthPeeling)
-                        arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
-                        arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
-                        arenderer.SetOcclusionRatio(settings.occlusionRatio)
-                        arenderer.SetUseFXAA(settings.useFXAA)
-                        arenderer.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
-                        if hasattr(arenderer, "SetUseSSAO"):
-                            arenderer.SetUseSSAO(settings.useSSAO)
-                            arenderer.SetSSAORadius(settings.SSAORadius)
-                            arenderer.SetSSAOBias(settings.SSAOBias)
-                            arenderer.SetSSAOKernelSize(settings.SSAOKernelSize)
-                            arenderer.SetSSAOBlur(settings.SSAOBlur)
+                    arenderer.SetUseDepthPeeling(settings.useDepthPeeling)
+                    arenderer.SetUseDepthPeelingForVolumes(settings.useDepthPeeling)
+                    arenderer.SetMaximumNumberOfPeels(settings.maxNumberOfPeels)
+                    arenderer.SetOcclusionRatio(settings.occlusionRatio)
+                    arenderer.SetUseFXAA(settings.useFXAA)
+                    arenderer.SetPreserveDepthBuffer(settings.preserveDepthBuffer)
+                    if hasattr(arenderer, "SetUseSSAO"):
+                        arenderer.SetUseSSAO(settings.useSSAO)
+                        arenderer.SetSSAORadius(settings.SSAORadius)
+                        arenderer.SetSSAOBias(settings.SSAOBias)
+                        arenderer.SetSSAOKernelSize(settings.SSAOKernelSize)
+                        arenderer.SetSSAOBlur(settings.SSAOBlur)
 
                     if image_actor:
                         arenderer.SetLayer(1)
@@ -753,20 +750,20 @@ class Plotter:
             return #################
             ########################
 
-        if settings.useOpenVR:
-            self.interactor = vtk.vtkOpenVRRenderWindowInteractor()
-        else:
-            self.interactor = vtk.vtkRenderWindowInteractor()
-            # self.interactor.EnableRenderOff()
+        self.interactor = vtk.vtkRenderWindowInteractor()
+        # self.interactor.EnableRenderOff()
 
         self.interactor.SetRenderWindow(self.window)
         vsty = vtk.vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(vsty)
-        self.interactor.AddObserver("LeftButtonPressEvent", self._mouseleft)
-        self.interactor.AddObserver("RightButtonPressEvent", self._mouseright)
-        self.interactor.AddObserver("MiddleButtonPressEvent", self._mousemiddle)
-        self.interactor.AddObserver("KeyPressEvent", self._keypress)
-        self.interactor.AddObserver("KeyReleaseEvent", self._keyrelease)
+
+        if settings.enableDefaultMouseCallbacks:
+            self.interactor.AddObserver("LeftButtonPressEvent", self._mouseleft)
+            self.interactor.AddObserver("RightButtonPressEvent", self._mouseright)
+            self.interactor.AddObserver("MiddleButtonPressEvent", self._mousemiddle)
+        if settings.enableDefaultKeyboardCallbacks:
+            self.interactor.AddObserver("KeyPressEvent", self._keypress)
+            self.interactor.AddObserver("KeyReleaseEvent", self._keyrelease)
 
         self._repeating_timer_id = None
         self._timer_event_id = None
@@ -775,7 +772,6 @@ class Plotter:
             def win_interact(iren, event):  # flushing interactor events
                 if event == "TimerEvent":
                     iren.ExitCallback()
-
             self._timer_event_id = self.interactor.AddObserver("TimerEvent", win_interact)
 
         return ##############################################################
@@ -786,7 +782,7 @@ class Plotter:
         """Call this method from inside a loop to allow mouse and keyboard interaction."""
         if self._timer_event_id is not None and settings.immediateRendering:
             self._repeatingtimer_id = self.interactor.CreateRepeatingTimer(10)
-            # self.interactor.EnableRenderOff()
+            # self.interactor.EnableRenderOff() # or window.ProcessEvents()
             self.interactor.Start()
             # self.interactor.EnableRenderOn()
             self.interactor.DestroyTimer(self._repeatingtimer_id)
@@ -807,8 +803,6 @@ class Plotter:
         :param int at: add the object at the specified renderer
         :param bool render: render the scene after adding the object
         """
-        if not self.interactor:
-            return self
         if at is not None:
             self.renderer = self.renderers[at]
 
@@ -826,7 +820,7 @@ class Plotter:
         if render:
             if resetcam:
                 self.renderer.ResetCamera()
-            self.interactor.Render()
+            self.window.Render()
         return self
 
     def remove(self, actors, at=None, render=False, resetcam=False):
@@ -835,8 +829,6 @@ class Plotter:
         :param int at: remove the object at the specified renderer
         :param bool render: render the scene after removing the object
         """
-        if not self.interactor:
-            return self
         if at is not None:
             ren = self.renderers[at]
         else:
@@ -870,7 +862,7 @@ class Plotter:
         if render:
             if resetcam:
                 ren.ResetCamera()
-            self.interactor.Render()
+            self.window.Render()
         return self
 
     def pop(self, at=0, render=False):
@@ -882,7 +874,7 @@ class Plotter:
         """Render the scene."""
         if resetcam:
             self.renderer.ResetCamera()
-        self.interactor.Render()
+        self.window.Render()
         return self
 
     def backgroundColor(self, c1=None, c2=None, at=None):
@@ -1063,22 +1055,21 @@ class Plotter:
 
             .. code-block:: python
 
-            from vedo import Cone
-            Cone().show(axes=1).flyTo([1,0,0]).show()
-
+                from vedo import Cone
+                Cone().show(axes=1).flyTo([1,0,0]).show()
         """
         self.resetcam = False
         self.interactor.FlyTo(self.renderers[at], point)
         return self
 
-    def parallelProjection(self, value=True):
-        """Use parallel projection. Obecjt is seen from "infinite" distance",
-        e.i. remove any perspective effects.
+    def useParallelProjection(self, value=True, at=0):
         """
-        settings.useParallelProjection = value
-        for r in self.renderers:
-            r.GetActiveCamera().SetParallelProjection(value)
-            r.Modified()
+        Use parallel projection ``at`` a specified renderer.
+        Object is seen from "infinite" distance, e.i. remove any perspective effects.
+        """
+        r = self.renderers[at]
+        r.GetActiveCamera().SetParallelProjection(value)
+        r.Modified()
         return self
 
 
@@ -1352,7 +1343,7 @@ class Plotter:
 
                 if evt.isPicture:
                     t += f"\nImage shape  : {evt.actor.shape}"
-                    pcol = vedo.colors.colorPicker(evt.picked2d, plt=self)
+                    pcol = vedo.colors.colorPicker(evt.picked2d, plotter=self)
                     t += f"\nPixel color  : {vedo.colors.rgb2hex(pcol/255)} {pcol}"
 
                 if evt.isPoints:
@@ -1518,6 +1509,7 @@ class Plotter:
 
             event_dict = utils.dotdict({
                 "name": ename,
+                "title": self.title, # window title, can be used as an id for the Plotter
                 "id": cid,
                 "priority": priority,
                 "at": self.renderers.index(self.renderer),
@@ -1940,6 +1932,8 @@ class Plotter:
 
         if camera is not None:
             self.resetcam = False
+            if isinstance(camera, vtk.vtkCamera):
+                self.camera = camera
 
         if resetcam is not None:
             self.resetcam = resetcam
@@ -1979,7 +1973,7 @@ class Plotter:
             if self.interactor:
                 if zoom:
                     self.camera.Zoom(zoom)
-                self.interactor.Render()
+                self.window.Render()
                 self.window.SetWindowName(self.title)
                 if self.interactive:
                     self.interactor.Start()
@@ -2001,10 +1995,7 @@ class Plotter:
             self.qtWidget.GetRenderWindow().AddRenderer(self.renderer)
 
         if not self.camera:
-            if isinstance(camera, vtk.vtkCamera):
-                self.camera = camera
-            else:
-                self.camera = self.renderer.GetActiveCamera()
+            self.camera = self.renderer.GetActiveCamera()
 
         self.camera.SetParallelProjection(settings.useParallelProjection)
 
@@ -2043,8 +2034,13 @@ class Plotter:
                     if ia.scalarbar not in self.scalarbars:
                         self.scalarbars.append(ia.scalarbar)
 
-                if hasattr(ia, 'flagText') and self.interactor and not self.offscreen:
+                if (hasattr(ia, 'flagText')
+                    and self.interactor
+                    and not self.offscreen
+                    and not (settings.vtk_version[0] == 9 and "Linux" in settings.sys_platform)
+                    ):
                     #check balloons
+                    # Linux vtk9 is bugged
                     if ia.flagText:
                         if not self.flagWidget: # Create widget on the fly
                             self._flagRep = vtk.vtkBalloonRepresentation()
@@ -2102,7 +2098,8 @@ class Plotter:
         if self.resetcam:
             self.renderer.ResetCamera()
 
-        addons.addRendererFrame()
+        if len(self.renderers) > 1:
+            addons.addRendererFrame()
 
         if not self.initializedIren and self.interactor:
             self.interactor.Initialize()
@@ -2356,6 +2353,31 @@ class Plotter:
         """
         retval = vedo.io.screenshot(filename, scale, returnNumpy)
         return retval
+
+    def topicture(self, scale=None):
+        """Generate a Picture object from the current rendering window.
+
+        :param int scale: set image magnification
+        """
+        if scale is None:
+            scale = settings.screeshotScale
+
+        if settings.screeshotLargeImage:
+           w2if = vtk.vtkRenderLargeImage()
+           w2if.SetInput(settings.plotter_instance.renderer)
+           w2if.SetMagnification(scale)
+        else:
+            w2if = vtk.vtkWindowToImageFilter()
+            w2if.SetInput(settings.plotter_instance.window)
+            if hasattr(w2if, 'SetScale'):
+                w2if.SetScale(scale, scale)
+            if settings.screenshotTransparentBackground:
+                w2if.SetInputBufferTypeToRGBA()
+            w2if.ReadFrontBufferOff()  # read from the back buffer
+        w2if.Update()
+        pic = vedo.picture.Picture(w2if.GetOutput())
+        return pic
+
 
     def export(self, filename='scene.npz'):
         """Export scene to file to HTML, X3D or Numpy file."""
@@ -2653,6 +2675,7 @@ class Plotter:
 
         elif key == "A": # toggle antialiasing
             msam = settings.plotter_instance.window.GetMultiSamples()
+            # print('antialiasing MultiSamples set to', msam)
             if not msam:
                 settings.plotter_instance.window.SetMultiSamples(8)
             else:
