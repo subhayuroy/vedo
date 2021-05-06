@@ -23,8 +23,8 @@ class Viewer:
         return self
 
     def show(self, *args, **kwargs):
-        self.plotter.show(*args, **kwargs)
-        return self
+        plt = self.plotter.show(*args, **kwargs)
+        return plt
 
     def _buttonfunc(self):
         if self.timerId is not None:
@@ -55,4 +55,4 @@ earth  = vedo.Earth()
 moon   = vedo.Sphere(r=0.1).x(1.5).color('k7')
 txt2d  = vedo.CornerAnnotation().font("Kanopus")
 
-viewer.show(earth, moon, txt2d, viewup='z')
+viewer.show(earth, moon, txt2d, viewup='z').close()

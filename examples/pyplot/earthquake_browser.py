@@ -33,7 +33,7 @@ for i, d in data.iterrows():
     ce = GeoCircle(lat, long, E/50).scale(picscale).z(num/M).c(rgb).lw(0.1).useBounds(False)
     ce.time = i
     ce.info = '\n'.join(str(d).split('\n')[:-1])    # remove of the last line in string d
-    if M > 6.5: ce.alpha(0.8)                       # make the big ones slightly transparent
+    #if M > 6.5: ce.alpha(0.8)                       # make the big ones slightly transparent (vtk9 bugged)
     if i < len(data)-num: ce.off()                  # switch off older ones: make circles invisible
     centers.append(ce)
 
@@ -50,4 +50,4 @@ plt = Plotter(size=(2200,1100), title=__doc__)
 plt.addSlider2D(sliderfunc, 0, len(centers)-1, value=len(centers)-1, showValue=False, title="today")
 plt.addHoverLegend(useInfo=True, alpha=1, c='w', bg='red2', s=1)
 comment = Text2D("Areas are proportional to energy release\n[hover mouse to get more info]", bg='g9', alpha=.7)
-plt.show(pic.pickable(False), emag.pickable(False), centers, comment, zoom=2.27)
+plt.show(pic.pickable(False), emag.pickable(False), centers, comment, zoom=2.27).close()

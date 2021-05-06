@@ -619,6 +619,7 @@ def addScalarBar3D(
         titleRotation=0.0,
         nlabels=9,
         labelFont="",
+        labelSize=1,
         labelOffset=0.375,
         labelRotation=0,
         italic=0,
@@ -647,6 +648,8 @@ def addScalarBar3D(
     :param float titleSize: size of title wrt numeric labels
     :param float titleRotation: title rotation in degrees
     :param int nlabels: number of numeric labels
+    :param str labelFont: font type for labels
+    :param float labelSize: label scale factor
     :param float labelOffset: space btw numeric labels and scale
     :param float labelRotation: label rotation in degrees
     :param bool useAlpha: render transparency of the color bar, otherwise ignore
@@ -723,10 +726,12 @@ def addScalarBar3D(
     scale.lw(0).wireframe(False).lighting('off')
     xbns = scale.xbounds()
     if pos is None:
-        d=sx/2
+        d = sx/2
         if title:
             d = np.sqrt((bns[1]-bns[0])**2+sy*sy)/20
         pos = (bns[1]-xbns[0]+d, (bns[2]+bns[3])/2, bns[4])
+
+    lsize = sy/60*labelSize
 
     tacts = []
     for i, p in enumerate(ticks_pos):
@@ -735,18 +740,17 @@ def addScalarBar3D(
             # build numeric text
             y = (p - 0.5) *sy
             if labelRotation:
-                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=sy/60,
+                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=lsize,
                                   justify='center-top', c=c, italic=italic, font=labelFont)
                 a.RotateZ(labelRotation)
             else:
-                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=sy/60,
+                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=lsize,
                                   justify='center-left', c=c, italic=italic, font=labelFont)
 
             tacts.append(a)
 
             # build ticks
-            tic = shapes.Line([xbns[1], y, 0],
-                              [xbns[1]+sx*labelOffset/4, y, 0], lw=0.1, c=c)
+            tic = shapes.Line([xbns[1], y, 0], [xbns[1]+sx*labelOffset/4, y, 0], lw=2, c=c)
             tacts.append(tic)
 
     # build title
@@ -754,7 +758,7 @@ def addScalarBar3D(
         t = shapes.Text3D(title, (0,0,0), s=sy/50*titleSize,
                           c=c, justify='centered', italic=italic, font=titleFont)
         t.RotateZ(90+titleRotation)
-        t.pos(sx*titleXOffset,titleYOffset,0)
+        t.pos(sx*titleXOffset, titleYOffset, 0)
         tacts.append(t)
 
     # build below scale
@@ -769,11 +773,11 @@ def addScalarBar3D(
            belowText = ' <'+str(vmin)
         if belowText:
             if labelRotation:
-                btx = shapes.Text3D(belowText, (0,0,0), s=sy/60,
+                btx = shapes.Text3D(belowText, (0,0,0), s=lsize,
                                     c=c, justify='center-top', italic=italic, font=labelFont)
                 btx.RotateZ(labelRotation)
             else:
-                btx = shapes.Text3D(belowText, (0,0,0), s=sy/60,
+                btx = shapes.Text3D(belowText, (0,0,0), s=lsize,
                                     c=c, justify='center-left', italic=italic, font=labelFont)
 
             btx.pos(sx*labelOffset, -sy/2-sx*0.66, 0)
@@ -791,11 +795,11 @@ def addScalarBar3D(
             aboveText = ' >'+str(vmax)
         if aboveText:
             if labelRotation:
-                atx = shapes.Text3D(aboveText, (0,0,0), s=sy/60,
+                atx = shapes.Text3D(aboveText, (0,0,0), s=lsize,
                                     c=c, justify='center-top', italic=italic, font=labelFont)
                 atx.RotateZ(labelRotation)
             else:
-                atx = shapes.Text3D(aboveText, (0,0,0), s=sy/60,
+                atx = shapes.Text3D(aboveText, (0,0,0), s=lsize,
                                     c=c, justify='center-left', italic=italic, font=labelFont)
 
             atx.pos(sx*labelOffset, sy/2+sx*0.66, 0)
@@ -813,225 +817,17 @@ def addScalarBar3D(
                                    c=(r,g,b), alpha=alfa)
         nanrect.lw(1).lc(c).lighting('off')
         if labelRotation:
-            nantx = shapes.Text3D(nanText, (0,0,0), s=sy/60,
+            nantx = shapes.Text3D(nanText, (0,0,0), s=lsize,
                                   c=c, justify='center-left', italic=italic, font=labelFont)
             nantx.RotateZ(labelRotation)
         else:
-            nantx = shapes.Text3D(nanText, (0,0,0), s=sy/60,
+            nantx = shapes.Text3D(nanText, (0,0,0), s=lsize,
                                   c=c, justify='center-left', italic=italic, font=labelFont)
         nantx.pos(sx*labelOffset, -sy/2-sx*0.66-nanshift, 0)
         tacts.append(nantx)
 
     if drawBox:
-        tacts.append(scale.box().lw(0.1))
-
-    for a in tacts: a.PickableOff()
-
-    mtacts = merge(tacts).lighting('off')
-    mtacts.PickableOff()
-    scale.PickableOff()
-
-    sact = Assembly([scale, arect, brect, nanrect] + tacts)
-    sact.SetPosition(pos)
-    sact.PickableOff()
-    sact.UseBoundsOff()
-    sact.name = 'ScalarBar3D'
-    return sact
-
-def addScalarBar3DOLD(
-    obj,
-    title='',
-    pos=None,
-    sx=None,
-    sy=None,
-    titleFont="",
-    titleXOffset=-1.5,
-    titleYOffset=0.0,
-    titleSize=1.5,
-    titleRotation=0.0,
-    nlabels=9,
-    labelFont="",
-    labelOffset=0.375,
-    labelRotation=0,
-    italic=0,
-    c=None,
-    useAlpha=True,
-    drawBox=True,
-    aboveText=None,
-    belowText=None,
-    nanText='NaN',
-    ):
-    """
-    Draw a 3D scalar bar.
-
-    ``obj`` input can be:
-        - a list of numbers,
-        - a list of two numbers in the form `(min, max)`,
-        - a ``Mesh`` already containing a set of scalars associated to vertices or cells,
-        - if ``None`` the last object in the list of actors will be used.
-
-    :param float sx: thickness of scalarbar
-    :param float sy: length of scalarbar
-    :param str title: scalar bar title
-    :param float titleXOffset: horizontal space btw title and color scalarbar
-    :param float titleYOffset: vertical space offset
-    :param float titleSize: size of title wrt numeric labels
-    :param float titleRotation: title rotation in degrees
-    :param int nlabels: number of numeric labels
-    :param float labelOffset: space btw numeric labels and scale
-    :param float labelRotation: label rotation in degrees
-    :param bool useAlpha: render transparency of the color bar, otherwise ignore
-    :param bool drawBox: draw a box around the colorbar (useful with useAlpha=True)
-
-    .. hint:: |scalarbars| |scalarbars.py|_
-    """
-    plt = settings.plotter_instance
-    if plt and c is None:  # automatic black or white
-        c = (0.9, 0.9, 0.9)
-        if np.sum(getColor(plt.backgrcol)) > 1.5:
-            c = (0.1, 0.1, 0.1)
-    if c is None: c = (0,0,0)
-    c = getColor(c)
-
-    bns = obj.GetBounds()
-    if sy is None:
-        sy = (bns[3]-bns[2])
-    if sx is None:
-        sx = sy/18
-
-    if isinstance(obj, Points):
-        lut = obj.mapper().GetLookupTable()
-        if not lut or lut.GetTable().GetNumberOfTuples() == 0:
-            obj.cmap('jet_r') # create the most similar to the default
-            # todo: grab the auto created default LUT (but where is it?)
-            #       cells or points?
-            lut = obj.mapper().GetLookupTable()
-        vmin, vmax = lut.GetRange()
-
-    elif isinstance(obj, (Volume, TetMesh)):
-        lut = utils.ctf2lut(obj)
-        vmin, vmax = lut.GetRange()
-
-    elif utils.isSequence(obj):
-        vmin, vmax = np.min(obj), np.max(obj)
-
-    else:
-        print("Error in ScalarBar3D(): input must be Mesh or list.", type(obj))
-        return obj
-
-    # build the color scale part
-    scale = shapes.Grid([-sx * labelOffset, 0, 0], c=c, alpha=1,
-                        sx=sx, sy=sy,
-                        resx=1, resy=lut.GetTable().GetNumberOfTuples())
-    scale.lw(0).wireframe(False)
-    cscals = np.linspace(vmin, vmax, lut.GetTable().GetNumberOfTuples())
-    scale.cmap(lut, cscals, on='cells').lighting('off')
-    xbns = scale.xbounds()
-
-    if pos is None:
-        d=sx/2
-        if title:
-            d = np.sqrt((bns[1]-bns[0])**2+sy*sy)/20
-        pos = (bns[1]-xbns[0]+d, (bns[2]+bns[3])/2, bns[4])
-
-    tacts = []
-    ticks_pos, ticks_txt = utils.makeTicks(vmin, vmax, nlabels)
-
-    for i, p in enumerate(ticks_pos):
-        tx = ticks_txt[i]
-        if i and tx:
-            # build numeric text
-            y = (p - 0.5) *sy
-            if labelRotation:
-                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=sy/60,
-                                  justify='center-top', c=c, italic=italic, font=labelFont)
-                a.RotateZ(labelRotation)
-            else:
-                a = shapes.Text3D(tx, pos=[sx*labelOffset, y, 0], s=sy/60,
-                                  justify='center-left', c=c, italic=italic, font=labelFont)
-
-            tacts.append(a)
-
-            # build ticks
-            tic = shapes.Line([xbns[1], y, 0],
-                              [xbns[1]+sx*labelOffset/4, y, 0], lw=0.1, c=c)
-            tacts.append(tic)
-
-    # build title
-    if title:
-        t = shapes.Text3D(title, (0,0,0), s=sy/50*titleSize,
-                          c=c, justify='centered', italic=italic, font=titleFont)
-        t.RotateZ(90+titleRotation)
-        t.pos(sx*titleXOffset,titleYOffset,0)
-        tacts.append(t)
-
-    # build below scale
-    brect = None
-    if lut.GetUseBelowRangeColor():
-        r,g,b,alfa = lut.GetBelowRangeColor()
-        brect = shapes.Rectangle([-sx *labelOffset -sx/2, -sy/2-sx-sx*0.1, 0],
-                                 [-sx *labelOffset +sx/2, -sy/2   -sx*0.1, 0],
-                                 c=(r,g,b), alpha=alfa)
-        brect.lw(1).lc(c).lighting('off')
-        if belowText is None:
-           belowText = ' <'+str(vmin)
-        if belowText:
-            if labelRotation:
-                btx = shapes.Text3D(belowText, (0,0,0), s=sy/60,
-                                    c=c, justify='center-top', italic=italic, font=labelFont)
-                btx.RotateZ(labelRotation)
-            else:
-                btx = shapes.Text3D(belowText, (0,0,0), s=sy/60,
-                                    c=c, justify='center-left', italic=italic, font=labelFont)
-
-            btx.pos(sx*labelOffset, -sy/2-sx*0.66, 0)
-            tacts.append(btx)
-
-    # build above scale
-    arect = None
-    if lut.GetUseAboveRangeColor():
-        r,g,b,alfa = lut.GetAboveRangeColor()
-        arect = shapes.Rectangle([-sx *labelOffset -sx/2, sy/2   +sx*0.1, 0],
-                                 [-sx *labelOffset +sx/2, sy/2+sx+sx*0.1, 0],
-                                 c=(r,g,b), alpha=alfa)
-        arect.lw(1).lc(c).lighting('off')
-        if aboveText is None:
-            aboveText = ' >'+str(vmax)
-        if aboveText:
-            if labelRotation:
-                atx = shapes.Text3D(aboveText, (0,0,0), s=sy/60,
-                                    c=c, justify='center-top', italic=italic, font=labelFont)
-                atx.RotateZ(labelRotation)
-            else:
-                atx = shapes.Text3D(aboveText, (0,0,0), s=sy/60,
-                                    c=c, justify='center-left', italic=italic, font=labelFont)
-
-            atx.pos(sx*labelOffset, sy/2+sx*0.66, 0)
-            tacts.append(atx)
-
-    # build NaN scale
-    nanrect = None
-    if lut.GetNanColor() != (0.5, 0.0, 0.0, 1.0):
-        nanshift = sx*0.1
-        if brect:
-            nanshift += sx
-        r,g,b,alfa = lut.GetNanColor()
-        nanrect = shapes.Rectangle([-sx *labelOffset -sx/2, -sy/2-sx-sx*0.1-nanshift, 0],
-                                   [-sx *labelOffset +sx/2, -sy/2   -sx*0.1-nanshift, 0],
-                                   c=(r,g,b), alpha=alfa)
-        nanrect.lw(1).lc(c).lighting('off')
-        if labelRotation:
-            nantx = shapes.Text3D(nanText, (0,0,0), s=sy/60,
-                                  c=c, justify='center-left', italic=italic, font=labelFont)
-            nantx.RotateZ(labelRotation)
-        else:
-            nantx = shapes.Text3D(nanText, (0,0,0), s=sy/60,
-                                  c=c, justify='center-left', italic=italic, font=labelFont)
-        nantx.pos(sx*labelOffset, -sy/2-sx*0.66-nanshift, 0)
-        tacts.append(nantx)
-
-    if drawBox:
-        tacts.append(scale.box().lw(0.1))
+        tacts.append(scale.box().lw(1))
 
     for a in tacts: a.PickableOff()
 
@@ -1358,7 +1154,7 @@ def addCutterTool(obj=None, mode="box", invert=False):
             elif mode=='sphere':
                 return _addCutterToolMeshWithSphere(obj, invert)
             else:
-                raise RuntimeError("Unknown mode: "+str(mode))
+                raise RuntimeError(f"Unknown mode: {mode}")
     except:
         return None
 
@@ -1869,9 +1665,9 @@ def Axes(
         titleFont="", # grab settings.defaultFont
         textScale=1.0,
         xTitlePosition=0.95, yTitlePosition=0.95, zTitlePosition=0.95,
-        xTitleOffset=0.025,  yTitleOffset=0.0275,  zTitleOffset=0.02,
+        xTitleOffset=0.025,  yTitleOffset=0.0275,  zTitleOffset=0.02, # can be a list (dx,dy,dz)
         xTitleJustify=None, yTitleJustify=None, zTitleJustify=None,
-        xTitleRotation=0, yTitleRotation=0, zTitleRotation=0,
+        xTitleRotation=0, yTitleRotation=0, zTitleRotation=0,         # can be a list (rx,ry,rz)
         xTitleBox=False,  yTitleBox=False,
         xTitleSize=0.025, yTitleSize=0.025, zTitleSize=0.025,
         xTitleColor=None, yTitleColor=None, zTitleColor=None,
@@ -1897,8 +1693,9 @@ def Axes(
         labelFont="", # grab settings.defaultFont
         xLabelColor=None, yLabelColor=None, zLabelColor=None,
         xLabelSize=0.016, yLabelSize=0.016, zLabelSize=0.016,
-        xLabelOffset=0.8, yLabelOffset=0.8, zLabelOffset=0.8,
-        xLabelRotation=0, yLabelRotation=0, zLabelRotation=0,
+        xLabelOffset=0.8, yLabelOffset=0.8, zLabelOffset=0.8, # each can be a list (dx,dy,dz)
+        xLabelRotation=0, yLabelRotation=0, zLabelRotation=0, # each can be a list (rx,ry,rz)
+        xAxisRotation=0, yAxisRotation=0, zAxisRotation=0,    # rotate all elements around axis
         xValuesAndLabels=None, yValuesAndLabels=None, zValuesAndLabels=None,
         xyShift=0, yzShift=0, zxShift=0,
         xShiftAlongY=0, xShiftAlongZ=0,
@@ -1942,9 +1739,9 @@ def Axes(
     - `hTitleJustify`, ['bottom-center'], origin of the title justification
     - `hTitleOffset`,   [(0,0.01,0)], control offsets of header title in x, y and z
     - `xTitlePosition`,       [0.32], title fractional positions along axis
-    - `xTitleOffset`,         [0.05], title fractional offset distance from axis line
+    - `xTitleOffset`,         [0.05], title fractional offset distance from axis line, can be a list
     - `xTitleJustify`,        [None], title justification
-    - `xTitleRotation`,          [0], add a rotation of the axis title
+    - `xTitleRotation`,          [0], add a rotation of the axis title, can be a list (rx,ry,rz)
     - `xTitleBox`,           [False], add a box around title text
     - `xLineColor`,      [automatic], color of the x-axis
     - `xTitleColor`,     [automatic], color of the axis title
@@ -1960,7 +1757,8 @@ def Axes(
     - `xLabelPrecision`,         [2], nr. of significative digits to be shown
     - `xLabelSize`,          [0.015], size of the numeric labels along axis
     - 'xLabelRotation',          [0], numeric labels rotation (can be a list of 3 rotations)
-    - `xLabelOffset`,          [0.8], offset of the numeric labels
+    - `xLabelOffset`,          [0.8], offset of the numeric labels (can be a list of 3 offsets)
+    - 'xAxisRotation',           [0], rotate the X axis elements (ticks and labels) around this same axis
     - `xValuesAndLabels`          [], assign custom tick positions and labels [(pos1, label1), ...]
     - `xyShift`                [0.0], slide the xy-plane along z (the range is [0,1])
     - `xShiftAlongY`           [0.0], slide x-axis along the y-axis (the range is [0,1])
@@ -1975,11 +1773,11 @@ def Axes(
         .. code-block:: python
 
             from vedo import Box, show
-            b = Box(pos=(1,2,3), length=8, width=9, height=7).alpha(0)
-            axes = Axes(b, c='k')  # returns Assembly object
-            for a in axes:
+            b = Box(pos=(1,2,3), length=8, width=9, height=7).alpha(0.1)
+            axs = Axes(b, c='k')  # returns Assembly object
+            for a in axs:
                 print(a.name)
-            show(b, axes)
+            show(axs)
 
     |customAxes1| |customAxes1.py|_ |customAxes2.py|_ |customAxes3.py|_
 
@@ -2328,7 +2126,7 @@ def Axes(
             cz.name = "zTipCone"
             cones.append(cz)
 
-    ################################################ MAJOR ticks
+    ################################################################# MAJOR ticks
     majorticks, minorticks= [], []
     xticks, yticks, zticks = [],[],[]
     if showTicks:
@@ -2341,6 +2139,8 @@ def Axes(
                 xticks.append(shapes.Rectangle(v1, v2))
             if len(xticks)>1:
                 xmajticks = merge(xticks).c(xLabelColor)
+                if xAxisRotation:
+                    xmajticks.RotateX(xAxisRotation)
                 if xyShift: xmajticks.shift(0,0,xyShift*dz)
                 if zxShift: xmajticks.shift(0,zxShift*dy,0)
                 if xShiftAlongY: xmajticks.shift(0,xShiftAlongY*dy,0)
@@ -2356,6 +2156,8 @@ def Axes(
                 yticks.append(shapes.Rectangle(v1, v2))
             if len(yticks)>1:
                 ymajticks = merge(yticks).c(yLabelColor)
+                if yAxisRotation:
+                    ymajticks.RotateY(yAxisRotation)
                 if xyShift: ymajticks.shift(0,0,xyShift*dz)
                 if yzShift: ymajticks.shift(yzShift*dx,0,0)
                 if yShiftAlongX: ymajticks.shift(yShiftAlongX*dx,0,0)
@@ -2371,7 +2173,7 @@ def Axes(
                 zticks.append(shapes.Rectangle(v1, v2))
             if len(zticks)>1:
                 zmajticks = merge(zticks).c(zLabelColor)
-                zmajticks.RotateZ(-45)
+                zmajticks.RotateZ(-45 + zAxisRotation)
                 zmajticks.RotateY(-90)
                 if yzShift: zmajticks.shift(yzShift*dx,0,0)
                 if zxShift: zmajticks.shift(0,zxShift*dy,0)
@@ -2380,7 +2182,7 @@ def Axes(
                 zmajticks.name = "zMajorTicks"
                 majorticks.append(zmajticks)
 
-        ## MINOR ticks ###############################################
+        ############################################################# MINOR ticks
         if xtitle and xMinorTicks and len(xticks)>1:
             tickThickness = xTickThickness * gscale/4
             tickLength = xTickLength * gscale/4
@@ -2417,6 +2219,8 @@ def Axes(
 
             if len(ticks):
                 xminticks = merge(ticks).c(xLabelColor)
+                if xAxisRotation:
+                    xminticks.RotateX(xAxisRotation)
                 if xyShift: xminticks.shift(0,0,xyShift*dz)
                 if zxShift: xminticks.shift(0,zxShift*dy,0)
                 if xShiftAlongY: xminticks.shift(0,xShiftAlongY*dy,0)
@@ -2460,6 +2264,8 @@ def Axes(
 
             if len(ticks):
                 yminticks = merge(ticks).c(yLabelColor)
+                if yAxisRotation:
+                    yminticks.RotateY(yAxisRotation)
                 if xyShift: yminticks.shift(0,0,xyShift*dz)
                 if yzShift: yminticks.shift(yzShift*dx,0,0)
                 if yShiftAlongX: yminticks.shift(yShiftAlongX*dx,0,0)
@@ -2503,7 +2309,7 @@ def Axes(
 
             if len(ticks):
                 zminticks = merge(ticks).c(zLabelColor)
-                zminticks.RotateZ(-45)
+                zminticks.RotateZ(-45 + zAxisRotation)
                 zminticks.RotateY(-90)
                 if yzShift: zminticks.shift(yzShift*dx,0,0)
                 if zxShift: zminticks.shift(0,zxShift*dy,0)
@@ -2512,7 +2318,7 @@ def Axes(
                 zminticks.name = "zMinorTicks"
                 minorticks.append(zminticks)
 
-    ################################################ axes tick NUMERIC text labels
+    ################################################ axes NUMERIC text labels
     labels = []
     xlab, ylab, zlab = None, None, None
 
@@ -2539,12 +2345,19 @@ def Axes(
 
         for i in range(1, len(xticks_str)):
             t = xticks_str[i]
-            if not t: continue
-            v = (xticks_float[i], -(xLabelOffset+xTickLength/2)*dy, 0)
+            if not t:
+                continue
+            if utils.isSequence(xLabelOffset):
+                xoffs, yoffs, zoffs = xLabelOffset
+            else:
+                xoffs, yoffs, zoffs = 0, xLabelOffset, 0
             xlab = shapes.Text3D(t, s=xLabelSize*textScale*gscale, font=labelFont, justify=jus)
             tb = xlab.ybounds() # must be ybounds: height of char
-            v = (xticks_float[i], -xLabelOffset*(tb[1]-tb[0]), 0)
-            xlab.pos(v)
+            v = (xticks_float[i], 0, 0)
+            offs = -np.array([xoffs, yoffs, zoffs])*(tb[1]-tb[0])
+            xlab.pos(v+offs)
+            if xAxisRotation:
+                xlab.rotateX(xAxisRotation, locally=False)
             if zRot: xlab.RotateZ(zRot)
             if xRot: xlab.RotateX(xRot)
             if yRot: xlab.RotateY(yRot)
@@ -2552,7 +2365,7 @@ def Axes(
             if zxShift: xlab.shift(0,zxShift*dy,0)
             if xShiftAlongY: xlab.shift(0,xShiftAlongY*dy,0)
             if xShiftAlongZ: xlab.shift(0,0,xShiftAlongZ*dz)
-            xlab.name = "xNumericLabel"+str(i)
+            xlab.name = f"xNumericLabel{i}"
             xlab.SetUseBounds(xUseBounds)
             labels.append(xlab.c(xLabelColor))
 
@@ -2578,11 +2391,19 @@ def Axes(
 
         for i in range(1, len(yticks_str)):
             t = yticks_str[i]
-            if not t: continue
+            if not t:
+                continue
+            if utils.isSequence(yLabelOffset):
+                xoffs, yoffs, zoffs = yLabelOffset
+            else:
+                xoffs, yoffs, zoffs = yLabelOffset, 0, 0
             ylab = shapes.Text3D(t, s=yLabelSize*textScale*gscale, font=labelFont, justify=jus)
             tb = ylab.ybounds() # must be ybounds: height of char
-            v = (-yLabelOffset*(tb[1]-tb[0]), yticks_float[i], 0)
-            ylab.pos(v)
+            v = (0, yticks_float[i], 0)
+            offs = -np.array([xoffs, yoffs, zoffs])*(tb[1]-tb[0])
+            ylab.pos(v+offs)
+            if yAxisRotation:
+                ylab.rotateY(yAxisRotation, locally=False)
             if zRot: ylab.RotateZ(zRot)
             if yRot: ylab.RotateY(yRot)
             if xRot: ylab.RotateX(xRot)
@@ -2590,7 +2411,7 @@ def Axes(
             if yzShift: ylab.shift(yzShift*dx,0,0)
             if yShiftAlongX: ylab.shift(yShiftAlongX*dx,0,0)
             if yShiftAlongZ: ylab.shift(0,0,yShiftAlongZ*dz)
-            ylab.name = "yNumericLabel"+str(i)
+            ylab.name = f"yNumericLabel{i}"
             ylab.SetUseBounds(yUseBounds)
             labels.append(ylab.c(yLabelColor))
 
@@ -2616,22 +2437,30 @@ def Axes(
 
         for i in range(1, len(zticks_str)):
             t = zticks_str[i]
-            if not t: continue
+            if not t:
+                continue
+            if utils.isSequence(zLabelOffset):
+                xoffs, yoffs, zoffs = zLabelOffset
+            else:
+                xoffs, yoffs, zoffs = zLabelOffset, zLabelOffset, 0
             zlab = shapes.Text3D(t, s=zLabelSize*textScale*gscale, font=labelFont, justify=jus)
             tb = zlab.ybounds() # must be ybounds: height of char
-            v = (-zLabelOffset*(tb[1]-tb[0])/2, -zLabelOffset*(tb[1]-tb[0])/2, zticks_float[i])
+            v = (0, 0, zticks_float[i])
+            offs = -np.array([xoffs, yoffs, zoffs])*(tb[1]-tb[0])/1.5
             angle=90
             if dx: angle = np.arctan2(dy,dx)*57.3
-            zlab.RotateZ(angle+yRot)      # vtk inverts order of rotations
+            zlab.RotateZ(angle + yRot)    # vtk inverts order of rotations
             if xRot: zlab.RotateY(-xRot)  # ..second
             zlab.RotateX(90+zRot)         # ..first
-            zlab.pos(v)
+            zlab.pos(v+offs)
+            if zAxisRotation:
+                zlab.rotateZ(zAxisRotation, locally=False)
             if yzShift: zlab.shift(yzShift*dx,0,0)
             if zxShift: zlab.shift(0,zxShift*dy,0)
             if zShiftAlongX: zlab.shift(zShiftAlongX*dx,0,0)
             if zShiftAlongY: zlab.shift(0,zShiftAlongY*dy,0)
             zlab.SetUseBounds(zUseBounds)
-            zlab.name = "zNumericLabel"+str(i)
+            zlab.name = f"zNumericLabel{i}"
             labels.append(zlab.c(zLabelColor))
 
     ################################################ axes titles
@@ -2646,6 +2475,11 @@ def Axes(
             zRot = xTitleRotation
         if zRot < 0:  # deal with negative angles
             zRot += 360
+
+        if utils.isSequence(xTitleOffset):
+            xoffs, yoffs, zoffs = xTitleOffset
+        else:
+            xoffs, yoffs, zoffs = 0, xTitleOffset, 0
 
         if xTitleJustify is not None:
             jus = xTitleJustify
@@ -2672,12 +2506,14 @@ def Axes(
         if xlab: # xlab is the last created numeric text label..
             lt0, lt1 = xlab.GetBounds()[2:4]
             shift =  lt1 - lt0
-        xt.pos([xTitlePosition*dx, -(xTitleOffset+xTickLength/2)*dy -shift, 0])
+        xt.pos([(xoffs+xTitlePosition)*dx, -(yoffs+xTickLength/2)*dy -shift, zoffs*dz])
+        if xAxisRotation:
+            xt.rotateX(xAxisRotation, locally=False)
         if xyShift: xt.shift(0,0,xyShift*dz)
         if xShiftAlongY: xt.shift(0,xShiftAlongY*dy,0)
         if xShiftAlongZ: xt.shift(0,0,xShiftAlongZ*dz)
         xt.SetUseBounds(xUseBounds)
-        xt.name = "xtitle "+str(xtitle)
+        xt.name = f"xtitle {xtitle}"
         titles.append(xt)
         if xTitleBox:
             titles.append(xt.box(scale=1.1).useBounds(xUseBounds))
@@ -2694,6 +2530,11 @@ def Axes(
                 yTitlePosition *= 0.975
         if zRot < 0:
             zRot += 360 # deal with negative angles
+
+        if utils.isSequence(yTitleOffset):
+            xoffs, yoffs, zoffs = yTitleOffset
+        else:
+            xoffs, yoffs, zoffs = yTitleOffset, 0, 0
 
         if yTitleJustify is not None:
             jus = yTitleJustify
@@ -2721,12 +2562,14 @@ def Axes(
         if ylab:  # this is the last created num label..
             lt0, lt1 = ylab.GetBounds()[0:2]
             shift = lt1 - lt0
-        yt.pos(-(yTitleOffset+yTickLength/2)*dx -shift, yTitlePosition*dy, 0)
-        if xyShift: yt.shift(0,0,xyShift*dz)
-        if yShiftAlongX: yt.shift(yShiftAlongX*dx,0,0)
-        if yShiftAlongZ: yt.shift(0,0,yShiftAlongZ*dz)
+        yt.pos(-(xoffs + yTickLength/2)*dx -shift, (yoffs + yTitlePosition)*dy, zoffs*dz)
+        if yAxisRotation:
+            yt.rotateY(yAxisRotation, locally=False)
+        if xyShift:      yt.shift(0, 0, xyShift*dz)
+        if yShiftAlongX: yt.shift(yShiftAlongX*dx, 0, 0)
+        if yShiftAlongZ: yt.shift(0, 0, yShiftAlongZ*dz)
         yt.SetUseBounds(yUseBounds)
-        yt.name = "ytitle "+str(ytitle)
+        yt.name = f"ytitle {ytitle}"
         titles.append(yt)
         if yTitleBox:
             titles.append(yt.box(scale=1.1).useBounds(yUseBounds))
@@ -2774,11 +2617,13 @@ def Axes(
             shift = lt1 - lt0
         zt.pos(-(zTitleOffset+zTickLength/5)*dx-shift,
                -(zTitleOffset+zTickLength/5)*dy-shift, zTitlePosition*dz)
+        if zAxisRotation:
+            zt.rotateZ(zAxisRotation, locally=False)
         if zxShift: zt.shift(0,zxShift*dy,0)
         if zShiftAlongX: zt.shift(zShiftAlongX*dx,0,0)
         if zShiftAlongY: zt.shift(0,zShiftAlongY*dy,0)
         zt.SetUseBounds(zUseBounds)
-        zt.name = "ztitle "+str(ztitle)
+        zt.name = f"ztitle {ztitle}"
         titles.append(zt)
 
     ################################################### header title
@@ -2795,7 +2640,7 @@ def Axes(
         wpos = [(0.5+hTitleOffset[0])*dx, (1+hTitleOffset[1])*dy, hTitleOffset[2]*dz]
         htit.pos(wpos)
         if xyShift: htit.shift(0,0,xyShift*dz)
-        htit.name = "htitle "+str(htitle)
+        htit.name = f"htitle {htitle}"
         titles.append(htit)
 
     ######
@@ -2834,54 +2679,8 @@ def addGlobalAxes(axtype=None, c=None):
         - 12, show polar axes
         - 13, draw a simple ruler at the bottom of the window
 
-    Axis type-1 can be fully customized by passing a dictionary ``axes=dict()`` where:
-
-        - `xtitle`,                ['x'], x-axis title text
-        - `xrange`,               [None], x-axis range in format (xmin, ymin), default is automatic.
-        - `numberOfDivisions`,    [None], approximate number of divisions on the longest axis
-        - `axesLineWidth`,           [1], width of the axes lines
-        - `gridLineWidth`,           [1], width of the grid lines
-        - `reorientShortTitle`,   [True], titles shorter than 2 letter are placed horizontally
-        - `titleDepth`,              [0], extrusion fractional depth of title text
-        - `xyGrid`,               [True], show a gridded wall on plane xy
-        - `yzGrid`,               [True], show a gridded wall on plane yz
-        - `zxGrid`,               [True], show a gridded wall on plane zx
-        - `zxGrid2`,             [False], show zx plane on opposite side of the bounding box
-        - `xyGridTransparent`    [False], make grid plane completely transparent
-        - `xyGrid2Transparent`   [False], make grid plane completely transparent on opposite side box
-        - `xyPlaneColor`,       ['gray'], color of the plane
-        - `xyGridColor`,        ['gray'], grid line color
-        - `xyAlpha`,              [0.15], grid plane opacity
-        - `xyFrameLine`,          [None], add a frame for the plane
-        - `showTicks`,            [True], show major ticks
-        - `digits`,               [None], use this number of significant digits in scientific notation
-        - `titleFont`,              [''], font for axes titles
-        - `labelFont`,              [''], font for numeric labels
-        - `textScale`,             [1.0], global scaling factor for text elements (titles, labels)
-        - `xTitlePosition`,       [0.32], title fractional positions along axis
-        - `xTitleOffset`,         [0.05], title fractional offset distance from axis line
-        - `xTitleJustify`, ["top-right"], title justification
-        - `xTitleRotation`,          [0], add a rotation of the axis title
-        - `xTitleBox`,           [False], add a box around title text
-        - `xLineColor`,      [automatic], color of the x-axis
-        - `xTitleColor`,     [automatic], color of the axis title
-        - `xTitleBackfaceColor`,  [None],  color of axis title on its backface
-        - `xTitleSize`,          [0.025], size of the axis title
-        - 'xTitleItalic',            [0], a bool or float to make the font italic
-        - `xHighlightZero`,       [True], draw a line highlighting zero position if in range
-        - `xHighlightZeroColor`, [autom], color of the line highlighting the zero position
-        - `xTickLength`,         [0.005], radius of the major ticks
-        - `xTickThickness`,     [0.0025], thickness of the major ticks along their axis
-        - `xMinorTicks`,             [1], number of minor ticks between two major ticks
-        - `xValuesAndLabels`          [], assign custom tick positions and labels [(pos1, label1), ...]
-        - `xLabelColor`,     [automatic], color of numeric labels and ticks
-        - `xLabelPrecision`,         [2], nr. of significative digits to be shown
-        - `xLabelSize`,          [0.015], size of the numeric labels along axis
-        - 'xLabelRotation',          [0], rotate clockwise [1] or anticlockwise [-1] by 90 degrees
-        - 'xFlipText',           [False], flip axis title and numeric labels orientation
-        - `xLabelOffset`,        [0.025], offset of numeric labels
-        - `tipSize`,              [0.01], size of the arrow tip
-        - `limitRatio`,           [0.04], below this ratio don't plot small axis
+    Axis type-1 can be fully customized by passing a dictionary ``axes=dict()``,
+    see ``Axes`` for the complete list of options.
 
         :Example:
 
@@ -3164,9 +2963,9 @@ def addGlobalAxes(axtype=None, c=None):
         yc.RotateX(90)
         zc = shapes.Disc(x0, r1=rm, r2=rm, c='lb', res=(1,72))
         yc.RotateY(90)
-        xc.clean().alpha(0.2).wireframe().lineWidth(2.5).PickableOff()
-        yc.clean().alpha(0.2).wireframe().lineWidth(2.5).PickableOff()
-        zc.clean().alpha(0.2).wireframe().lineWidth(2.5).PickableOff()
+        xc.clean().alpha(0.5).wireframe().lineWidth(2).PickableOff()
+        yc.clean().alpha(0.5).wireframe().lineWidth(2).PickableOff()
+        zc.clean().alpha(0.5).wireframe().lineWidth(2).PickableOff()
         ca = xc + yc + zc
         ca.PickableOff()
         ca.UseBoundsOff()

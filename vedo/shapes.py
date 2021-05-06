@@ -277,7 +277,7 @@ class Glyph(Mesh):
             poly = cleanPolyData.GetOutput()
 
         if isinstance(glyphObj, Points):
-            glyphObj = glyphObj.clean().polydata()
+            glyphObj = glyphObj.polydata()
 
         cmap=''
         if c in cmaps_names:
@@ -320,6 +320,7 @@ class Glyph(Mesh):
                 if orientationArray.lower() == "normals":
                     gly.SetVectorModeToUseNormal()
                 else:  # passing a name
+                    poly.GetPointData().SetActiveVectors(orientationArray)
                     gly.SetInputArrayToProcess(0, 0, 0, 0, orientationArray)
                     gly.SetVectorModeToUseVector()
             elif utils.isSequence(orientationArray) and not tol: # passing a list

@@ -1,5 +1,5 @@
 import numpy as np
-from vedo import dataurl, Volume, Axes, show
+from vedo import *
 from vedo.pyplot import histogram, plot
 
 cmap = 'nipy_spectral'
@@ -17,4 +17,4 @@ show([
       (p, "Voxel scalar histogram\nand opacity transfer function")
      ],
      N=2, sharecam=False, bg=(82,87,110),
-)
+).close()

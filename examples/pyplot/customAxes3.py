@@ -1,7 +1,9 @@
 """Customizing Axes.
 Cartesian planes can be displaced
 from their lower-range default position"""
-from vedo import Sphere, Axes, precision, show
+from vedo import Sphere, Axes, precision, show, settings
+
+# settings.useDepthPeeling = True
 
 sph = Sphere().scale([4,3,2]).shift(5,6,7).c('green2', 0.1)
 
@@ -20,6 +22,6 @@ axs = Axes(sph,          # build axes for object sph
            xyShift=0.2,  # move xy plane 20% along z
            yzShift=0.2,  # move yz plane 20% along x
            zxShift=0.2,  # move zx plane 20% along y
-          )
+)
 
-show(sph, axs, __doc__)
+show(sph, axs, __doc__).close()

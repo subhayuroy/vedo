@@ -16,7 +16,8 @@ for sc in sorted_colors1:
     tname = Text2D(cname, s=0.9)
     cbs.append([tname, cb])
 print("click on any cube and press i or I")
-show(cbs, N=len(cbs), azimuth=.2, size='full', title="matplotlib colors", interactive=0)
+plt1= show(cbs, N=len(cbs), azimuth=.2, size='full', title="matplotlib colors", interactive=0)
+plt1.render()
 
 # sort by name (bootstrap5 colors):
 sorted_colors2 = sorted(colors.items(), key=itemgetter(0))
@@ -26,6 +27,7 @@ for sc in sorted_colors2:
     if cname[-1] not in "123456789": continue
     cb = Cube().lw(1).lighting('off').color(cname)
     cbs.append([cname, cb])
-show(cbs, shape=(11,9), azimuth=.2, size=(800,1000), title="bootstrap5 colors", new=True)
+plt2= show(cbs, shape=(11,9), azimuth=.2, size=(800,1000), title="bootstrap5 colors", new=True)
 
-
+plt2.close()
+plt1.close()

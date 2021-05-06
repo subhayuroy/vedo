@@ -196,9 +196,6 @@ rendererFramePadding = 0.0001
 # Qt embedding
 usingQt = False
 
-# OpenVR rendering
-useOpenVR = False
-
 # Wrap lines in tubes
 renderLinesAsTubes = False
 
@@ -218,22 +215,19 @@ lightFollowsCamera = False
 twoSidedLighting = True
 
 # Turn on/off rendering of translucent material with depth peeling technique.
-#https://lorensen.github.io/VTKExamples/site/Cxx/Visualization/CorrectlyRenderTranslucentGeometry
+#print("vtk_version sys_platform", vtk_version, sys_platform)
 useDepthPeeling = False
 multiSamples = 8
-#print(vtk_version, sys_platform)
 if vtk_version[0] >= 9:
-    useDepthPeeling = True
-if "Darwin" in sys_platform:
-    useDepthPeeling = False
-    multiSamples = 0
-    
-maxNumberOfPeels= 8
+    if "Windows" in sys_platform:
+        useDepthPeeling = True
+# only relevant if depthpeeling is on
+alphaBitPlanes = 1
+maxNumberOfPeels= 4
 occlusionRatio  = 0.1
-alphaBitPlanes  = True
 
 # Turn on/off nvidia FXAA anti-aliasing, if supported.
-useFXAA         = False  # either True or False
+useFXAA = False  # either True or False
 
 # By default, the depth buffer is reset for each renderer. If true, use the existing depth buffer
 preserveDepthBuffer = False
@@ -507,7 +501,7 @@ font_parameters = dict(
 
 
 ####################################################################################
-def embedWindow(backend='k3d', verbose=True):
+def embedWindow(backend='ipyvtk', verbose=True):
     """Use this function to control whether the rendering window is inside
     the jupyter notebook or as an independent external window"""
     global notebook_plotter, notebookBackend
